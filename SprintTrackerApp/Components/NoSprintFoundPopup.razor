@@ -1,0 +1,36 @@
+﻿<h3>NoSprintFoundPopup</h3>
+
+@code {
+    [Parameter] public EventCallback OnCreateNewSprint { get; set; }
+    [Parameter] public EventCallback OnLoadPreviousSprint { get; set; }
+}
+
+<div class="popup">
+    <div class="popup-content">
+        <h3>No Current Sprint Found</h3>
+        <p>There is no current sprint available. What would you like to do?</p>
+        <button class="btn btn-success" @onclick="OnCreateNewSprint">Create New Sprint</button>
+        <button class="btn btn-warning" @onclick="OnLoadPreviousSprint">Load Previous Sprint</button>
+    </div>
+</div>
+
+<style>
+    .popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .popup-content {
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        text-align: center;
+    }
+</style>

@@ -1,0 +1,49 @@
+﻿@page "/create-sprint"
+@using DummyProject.Models
+@using SprintTrackerApp.Data
+@inject SprintService SprintService
+@inject NavigationManager Navigation
+
+<h3>Create New Sprint</h3>
+
+<EditForm Model="@newSprint" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="name">Sprint Name</label>
+        <InputText id="name" class="form-control" @bind-Value="newSprint.Name" />
+        <ValidationMessage For="@(() => newSprint.Name)" />
+    </div>
+
+    <div class="form-group">
+        <label for="startDate">Start Date</label>
+        <InputDate id="startDate" class="form-control" @bind-Value="newSprint.StartDate" />
+        <ValidationMessage For="@(() => newSprint.StartDate)" />
+    </div>
+
+    <div class="form-group">
+        <label for="endDate">End Date</label>
+        <InputDate id="endDate" class="form-control" @bind-Value="newSprint.EndDate" />
+        <ValidationMessage For="@(() => newSprint.EndDate)" />
+    </div>
+    <br>
+    <button type="submit" class="btn btn-primary">Create Sprint</button>
+</EditForm>
+
+@code {
+    private const int DefaultSprintLength = 14;
+    private SprintItem newSprint = new SprintItem();
+
+    protected override void OnInitialized()
+    {
+        newSprint.StartDate = DateTime.Today;
+        newSprint.EndDate = newSprint.StartDate.AddDays(DefaultSprintLength);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await SprintService.AddSprintAsync(newSprint);
+        Navigation.NavigateTo("/");
+    }
+}

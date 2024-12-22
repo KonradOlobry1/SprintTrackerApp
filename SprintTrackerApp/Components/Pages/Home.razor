@@ -1,0 +1,50 @@
+﻿@page "/Home"
+@using DummyProject.Models
+@using MudBlazor
+@using SprintTrackerApp.Data
+
+@inject TaskService TaskService
+
+<h1>Sprint Tracker</h1>
+
+<h4>Add Task</h4>
+<input @bind="newTaskTitle" placeholder="Task Title" />
+<button @onclick="AddTask">Add Task</button>
+
+<h4>Task List</h4>
+<ul>
+    @foreach (var task in tasks)
+    {
+            <li>@task.Title - @task.Status</li>
+    }
+</ul>
+
+
+@foreach (var task in tasks)
+{
+    <MudCard>
+        <MudCardContent>
+        <h5>@task.Title</h5>
+        <p>@task.Description</p>
+        </MudCardContent>
+    </MudCard>
+}
+
+
+@code {
+    private List<TaskItem> tasks = new();
+    private string newTaskTitle = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tasks = await TaskService.GetTasksAsync();
+    }
+
+    private async Task AddTask()
+    {
+        var task = new TaskItem { Title = newTaskTitle, Status = "InProgress" };
+        await TaskService.AddTaskAsync(task);
+        tasks = await TaskService.GetTasksAsync(); // Refresh task list
+        newTaskTitle = string.Empty;
+    }
+}

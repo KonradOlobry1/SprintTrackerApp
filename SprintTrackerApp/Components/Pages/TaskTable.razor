@@ -1,0 +1,105 @@
+@page "/"
+@using DummyProject.Models
+@using SprintTrackerApp.Data
+@inject TaskService TaskService
+@inject SprintService SprintService
+@inject NavigationManager Navigation
+
+@if (showPopup)
+{
+    <NoSprintFoundPopup OnCreateNewSprint="CreateNewSprint" OnLoadPreviousSprint="LoadPreviousSprint" />
+}
+else
+{
+    <h3>@currentSprint?.Name</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Task</th>
+                @for (var i = 0; i < days?.Length; i++)
+                {
+                    <th>@days[i]</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var task in tasks)
+            {
+                <tr>
+                    <td>@task.Title</td>
+                    @for (var i = 0; i < days?.Length; i++)
+                    {
+                        <td>
+                            @RenderTaskStatus(task, i)
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<TaskItem> tasks = new();
+    private SprintItem? currentSprint = new();
+    private string[]? days;
+    private bool showPopup = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        tasks = await TaskService.GetTasksAsync();
+        currentSprint = await SprintService.GetCurrentSprintsAsync();
+
+        if (currentSprint == null)
+        {
+            showPopup = true;
+        }
+        else
+        {
+            days = new string[SprintService.GetSprintDuration(currentSprint)];
+            var startDate = currentSprint.StartDate;
+            for (int i = 0; i < days.Length; i++)
+            {
+                days[i] = startDate.AddDays(i).ToString("MM/dd");
+            }
+        }
+    }
+
+    private RenderFragment RenderTaskStatus(TaskItem task, int day) => builder =>
+    {
+        var progress = task.Progress.FirstOrDefault(p => p.Day == day);
+        if (progress != null)
+        {
+            builder.OpenElement(0, "div");
+            builder.AddContent(1, $"{progress.StoryPointsCompleted} SP done by {progress.CompletedBy}");
+            builder.CloseElement();
+        }
+        else
+        {
+            builder.OpenElement(0, "div");
+            builder.AddContent(1, "No progress");
+            builder.CloseElement();
+        }
+    };
+
+    private string GetStatusForDay(TaskItem task, int day)
+    {
+        if (currentSprint == null) return "NotStarted";
+
+        var currentDate = currentSprint.StartDate.AddDays(day);
+        if (currentDate < DateTime.Now) return "Completed";
+        if (currentDate == DateTime.Now) return "InProgress";
+        return "NotStarted";
+    }
+
+    private async Task CreateNewSprint()
+    {
+        Navigation.NavigateTo("/create-sprint");
+    }
+
+    private async Task LoadPreviousSprint()
+    {
+        // Logic to load the previous sprint
+        showPopup = false;
+    }
+}
