@@ -1,0 +1,2 @@
+Add-Migration <migrationName> -StartupProject DummyProject -Project DummyProject
+Update-Database -StartupProject DummyProject -Project DummyProject

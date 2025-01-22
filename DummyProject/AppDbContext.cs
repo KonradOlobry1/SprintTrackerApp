@@ -19,7 +19,12 @@ namespace DummyProject
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite($"Data Source=C:\\Users\\Konrad\\source\\repos\\SprintTrackerApp\\DummyProject\\sprintTracker.db");
+            var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sprintTracker.db");
+            if (!File.Exists(dbPath))
+            {
+                File.Create(dbPath).Dispose();
+            }
+            optionsBuilder.UseSqlite($"Data Source={dbPath}");
         }
     }
 }
