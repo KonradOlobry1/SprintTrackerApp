@@ -26,7 +26,11 @@ else
             @foreach (var task in tasks)
             {
                 <tr>
-                    <td>@task.Title</td>
+                    <td class="task-column">
+                        <div class="task-title">@task.Title</div>
+                        <div class="task-description">@task.Description</div>
+                        <div class="task-status">@task.Status</div>
+                    </td>
                     @for (var i = 0; i < days?.Length; i++)
                     {
                         <td>

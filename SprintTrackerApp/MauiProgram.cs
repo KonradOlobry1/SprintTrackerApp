@@ -29,7 +29,17 @@ namespace SprintTrackerApp
     		builder.Logging.AddDebug();
 #endif
 
-            return builder.Build();
+            var app = builder.Build();
+
+            // Ensure the database is created and seed data
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                dbContext.Database.EnsureCreated();
+                //dbContext.SeedData();
+            }
+
+            return app;
         }
     }
 }

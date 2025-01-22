@@ -2,6 +2,7 @@
 @using DummyProject.Models
 @using MudBlazor
 @using SprintTrackerApp.Data
+@using TaskStatus = DummyProject.Models.TaskStatus;
 
 @inject TaskService TaskService
 
@@ -42,7 +43,7 @@
 
     private async Task AddTask()
     {
-        var task = new TaskItem { Title = newTaskTitle, Status = "InProgress" };
+        var task = new TaskItem { Title = newTaskTitle, Status = TaskStatus.Created };
         await TaskService.AddTaskAsync(task);
         tasks = await TaskService.GetTasksAsync(); // Refresh task list
         newTaskTitle = string.Empty;
