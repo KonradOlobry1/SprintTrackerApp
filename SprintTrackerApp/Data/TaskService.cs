@@ -14,7 +14,7 @@ namespace SprintTrackerApp.Data
         }
 
         public async Task<List<TaskItem>> GetTasksAsync()
-        {
+        {         
             return await _context.Tasks.ToListAsync();
         }
 

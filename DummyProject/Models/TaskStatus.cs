@@ -1,4 +1,5 @@
-﻿namespace DummyProject.Models
+namespace DummyProject.Models
+
 {
     public enum TaskStatus
     {

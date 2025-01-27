@@ -16,7 +16,7 @@ namespace DummyProject.Models
 
         [Required(ErrorMessage = "Story points are required")]
         public int StoryPoints { get; set; }
-        public string Priority { get; set; } = string.Empty;
+        public TaskPriority Priority { get; set; } = TaskPriority.P2; // Default priority.
         public DateTime DateAdded { get; set; } = DateTime.Now;
         public List<TaskProgress> Progress { get; set; } = [];
     }
