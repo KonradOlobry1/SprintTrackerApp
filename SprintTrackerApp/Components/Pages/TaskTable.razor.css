@@ -1,0 +1,21 @@
+.task-column {
+    width: 200px;
+    white-space: pre-wrap;
+}
+
+    task-title {
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+
+    .task-description {
+        font-style: italic;
+        color: gray;
+    }
+
+    .task-status{
+        color: green;
+    }
+.add-task {
+    white-space: pre-wrap;
+}
