@@ -17,7 +17,7 @@ namespace SprintTrackerApp
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            
+
             builder.Services.AddDbContext<AppDbContext>();
             builder.Services.AddScoped<TaskService>();
             builder.Services.AddScoped<SprintService>();
@@ -26,7 +26,7 @@ namespace SprintTrackerApp
 
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
 
             var app = builder.Build();
@@ -36,7 +36,6 @@ namespace SprintTrackerApp
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 dbContext.Database.EnsureCreated();
-                //dbContext.SeedData();
             }
 
             return app;
