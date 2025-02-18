@@ -35,5 +35,15 @@ namespace SprintTrackerApp.Data
             _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
         }
+
+        public async Task DeleteTaskByIdAsync(int taskId)
+        {
+            var task = await _context.Tasks.FindAsync(taskId);
+            if (task != null)
+            {
+                _context.Tasks.Remove(task);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

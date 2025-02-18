@@ -7,7 +7,7 @@
 
 @if (showPopup)
 {
-        <NoSprintFoundPopup OnCreateNewSprint="CreateNewSprint" OnLoadPreviousSprint="LoadPreviousSprint" />
+    <NoSprintFoundPopup OnCreateNewSprint="CreateNewSprint" OnLoadPreviousSprint="LoadPreviousSprint" />
 }
 else
 {
@@ -26,8 +26,13 @@ else
             @foreach (var task in tasks)
             {
                 <tr>
-                    <td class="task-column">
-                        <div class="task-title">@task.Title</div>
+                    <td class="task-column position-relative">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="task-title">@task.Title</div>
+                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" @onclick="() => SetTaskToDelete(task)">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
                         <div class="task-description">@task.Description</div>
                         <div class="task-status">@task.Status</div>
                     </td>
@@ -45,7 +50,7 @@ else
                     <div class="dropdown">
                         <button class="w-100 btn btn-success btn-sm bi bi-plus-square dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> Add</button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Add new task</a></li>
+                            <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#taskItemModal">Add new task</a></li>
                             <li><a class="dropdown-item" href="#">Add existing task</a></li>
                         </ul>
                     </div>
@@ -53,6 +58,95 @@ else
             </tr>
         </tbody>
     </table>
+
+	<!-- Modal for ConfirmDelete -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete <span class="text-success">@taskToDelete?.Title</span> task?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteConfirmed" data-bs-dismiss="modal">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for NewTaskItem -->
+    <div class="modal fade" id="taskItemModal" tabindex="-1" aria-labelledby="taskItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskItemModalLabel">Add Task</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@newTaskItem" OnValidSubmit="@HandleSaveTask">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label for="taskTitle" class="form-label">Title</label>
+                            <InputText id="taskTitle" class="form-control" @bind-Value="newTaskItem.Title" />
+                            <ValidationMessage For="@(() => newTaskItem.Title)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="taskDescription" class="form-label">Description</label>
+                            <InputTextArea id="taskDescription" class="form-control" @bind-Value="newTaskItem.Description" />
+                            <ValidationMessage For="@(() => newTaskItem.Description)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="storyPoints" class="form-label">Story Points</label>
+                            <InputNumber id="storyPoints" class="form-control" @bind-Value="newTaskItem.StoryPoints" />
+                            <ValidationMessage For="@(() => newTaskItem.StoryPoints)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="priority" class="form-label">Priority</label>
+                            <InputSelect id="priority" class="form-select" @bind-Value="newTaskItem.Priority">
+                                @foreach (var priority in Enum.GetValues<TaskPriority>())
+                                {
+                                    <option value="@priority">@priority</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <InputSelect id="status" class="form-select" @bind-Value="newTaskItem.Status">
+                                @foreach (var status in Enum.GetValues<DummyProject.Models.TaskStatus>())
+                                {
+                                    <option value="@status">@status</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Save Task</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var confirmDeleteModal = document.getElementById('confirmDeleteModal');
+        confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
+          var button = event.relatedTarget; // Button that triggered the modal
+          var itemId = button.getAttribute('data-id');
+          var modalBody = confirmDeleteModal.querySelector('#modalItemId');
+          modalBody.textContent = itemId;
+        });
+    </script>
 }
 
 @code {
@@ -60,6 +154,8 @@ else
     private SprintItem? currentSprint = new();
     private string[]? days;
     private bool showPopup = false;
+    private TaskItem newTaskItem = new();
+    private TaskItem? taskToDelete;
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,8 +216,57 @@ else
 
     private async Task LoadPreviousSprint()
     {
-        // Logic to load the previous sprint
         showPopup = false;
+    }
+
+    private async void HandleSaveTask()
+    {
+        try
+        {
+            await TaskService.AddTaskAsync(new TaskItem
+                {
+                    Title = newTaskItem.Title,
+                    Description = newTaskItem.Description,
+                    StoryPoints = newTaskItem.StoryPoints,
+                    Priority = newTaskItem.Priority,
+                    Status = newTaskItem.Status,
+                    DateAdded = DateTime.Now
+                });
+
+            tasks = await TaskService.GetTasksAsync();
+        }
+        catch (Exception ex)
+        {
+            // Handle error (e.g., log it, show a message to the user)
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void SetTaskToDelete(TaskItem task)
+    {
+        taskToDelete = task;
+    }
+
+    private async void DeleteConfirmed()
+    {
+        if (taskToDelete == null) return;
+
+        try
+        {
+            await TaskService.DeleteTaskByIdAsync(taskToDelete.Id);
+            tasks.Remove(taskToDelete);
+        }
+        catch (Exception ex)
+        {
+            // Handle error (e.g., log it, show a message to the user)
+        }
+        finally
+        {
+            StateHasChanged();
+        }
     }
 }
 
