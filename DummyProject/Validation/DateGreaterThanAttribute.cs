@@ -15,12 +15,9 @@ public class DateGreaterThanAttribute : ValidationAttribute
             return new ValidationResult(ErrorMessage);
 
         var currentValue = (DateTime)value;
-
-        var property = validationContext.ObjectType.GetProperty(_comparisonProperty);
-        if (property == null)
-            throw new ArgumentException("Property with this name not found");
-
+        var property = validationContext.ObjectType.GetProperty(_comparisonProperty) ?? throw new ArgumentException("Property with this name not found");
         var comparisonValue = property.GetValue(validationContext.ObjectInstance);
+
         if (comparisonValue == null)
             return ValidationResult.Success;
 

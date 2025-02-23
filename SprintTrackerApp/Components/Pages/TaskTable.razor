@@ -1,13 +1,16 @@
 @page "/"
 @using DummyProject.Models
+@using SprintTrackerApp.Components.Modals
+@using TaskStatus = DummyProject.Models.TaskStatus
 @using SprintTrackerApp.Data
 @inject TaskService TaskService
 @inject SprintService SprintService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 @if (showPopup)
 {
-        <NoSprintFoundPopup OnCreateNewSprint="CreateNewSprint" OnLoadPreviousSprint="LoadPreviousSprint" />
+    <NoSprintFoundPopup OnCreateNewSprint="CreateNewSprint" OnLoadPreviousSprint="LoadPreviousSprint" />
 }
 else
 {
@@ -27,9 +30,15 @@ else
             {
                 <tr>
                     <td class="task-column">
-                        <div class="task-title">@task.Title</div>
-                        <div class="task-description">@task.Description</div>
-                        <div class="task-status">@task.Status</div>
+                        <div class="card @GetCardBackgroundClass(task.Status)" style="width: 18rem;">
+                            <div class="card-body">
+                                <h5 class="card-title">@task.Title</h5>
+                                <h6 class="card-subtitle mb-2 text-body-secondary">@task.Status</h6>
+                                <p class="card-text">@task.Description</p>
+                                <button type="button" class="btn btn-primary btn-sm" @onclick="() => EditTask(task)">Edit</button>
+                                <button type="button" class="btn btn-danger btn-sm" @onclick="() => DeleteTask(task)">Delete</button>
+                            </div>
+                        </div>
                     </td>
                     @for (var i = 0; i < days?.Length; i++)
                     {
@@ -45,14 +54,18 @@ else
                     <div class="dropdown">
                         <button class="w-100 btn btn-success btn-sm bi bi-plus-square dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> Add</button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Add new task</a></li>
-                            <li><a class="dropdown-item" href="#">Add existing task</a></li>
+                            <li><button type="button" class="dropdown-item" @onclick="() => CreateTask()">Add new task</button></li>
+                            <li><button type="button" class="dropdown-item" >Add existing task</button></li>
                         </ul>
                     </div>
                 </td>
             </tr>
         </tbody>
     </table>
+
+    <CreateTaskModal @ref="createTaskModal" OnTaskCreated="ReloadTasks" />
+    <EditTaskModal @ref="editTaskModal" TaskToEdit="@taskToEdit" OnTaskEdited="ReloadTasks" />   
+    <DeleteTaskModal @ref="deleteTaskModal" TaskToDelete="@taskToDelete" OnTaskDeleted="ReloadTasks" />
 }
 
 @code {
@@ -60,24 +73,41 @@ else
     private SprintItem? currentSprint = new();
     private string[]? days;
     private bool showPopup = false;
+    private TaskItem? taskToDelete;
+    private TaskItem taskToEdit = new();
+    private EditTaskModal editTaskModal = new();
+    private CreateTaskModal createTaskModal = new();
+	private DeleteTaskModal deleteTaskModal = new();
 
     protected override async Task OnInitializedAsync()
     {
-        tasks = await TaskService.GetTasksAsync();
-        currentSprint = await SprintService.GetCurrentSprintsAsync();
+        await LoadDataAsync();
+    }
 
-        if (currentSprint == null)
+    private async Task LoadDataAsync()
+    {
+        try
         {
-            showPopup = true;
-        }
-        else
-        {
-            days = new string[SprintService.GetSprintDuration(currentSprint)];
-            var startDate = currentSprint.StartDate;
-            for (int i = 0; i < days.Length; i++)
+            tasks = await TaskService.GetTasksAsync();
+            currentSprint = await SprintService.GetCurrentSprintsAsync();
+
+            if (currentSprint == null)
             {
-                days[i] = startDate.AddDays(i).ToString("MM/dd");
+                showPopup = true;
             }
+            else
+            {
+                days = new string[SprintService.GetSprintDuration(currentSprint)];
+                var startDate = currentSprint.StartDate;
+                for (int i = 0; i < days.Length; i++)
+                {
+                    days[i] = startDate.AddDays(i).ToString("MM/dd");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
         }
     }
 
@@ -108,20 +138,71 @@ else
         return "NotStarted";
     }
 
-    private async Task CreateNewSprint()
+    private void CreateNewSprint()
     {
         Navigation.NavigateTo("/create-sprint");
     }
 
-    private async Task CreateNewTask()
+    private void CreateNewTask()
     {
         Navigation.NavigateTo("/create-task");
     }
 
-    private async Task LoadPreviousSprint()
+    private void LoadPreviousSprint()
     {
-        // Logic to load the previous sprint
         showPopup = false;
     }
-}
 
+    private void SetTaskToDelete(TaskItem task)
+    {
+        taskToDelete = task;
+    }
+
+    private async Task DeleteConfirmed()
+    {
+        if (taskToDelete == null) return;
+
+        await TaskService.DeleteTaskByIdAsync(taskToDelete.Id);
+        tasks.Remove(taskToDelete);
+
+        StateHasChanged();
+    }
+
+    private string GetCardBackgroundClass(TaskStatus status)
+    {
+        return status switch
+        {
+            TaskStatus.Created => "text-bg-secondary",
+            TaskStatus.Open => "text-bg-primary",
+            TaskStatus.InProgress => "text-bg-warning",
+            TaskStatus.InReview => "text-bg-info",
+            TaskStatus.Completed => "text-bg-success",
+            TaskStatus.Deffered => "text-bg-dark",
+            TaskStatus.Blocked => "text-bg-danger",
+            _ => "text-bg-light"
+        };
+    }
+
+    private async Task ReloadTasks()
+    {
+        tasks = await TaskService.GetTasksAsync();
+        StateHasChanged();
+    }
+
+    private async Task EditTask(TaskItem task)
+    {
+        taskToEdit = task;
+        await JS.InvokeVoidAsync("modalHelper.showModal", "editTaskModal");
+    }
+
+    private async Task DeleteTask(TaskItem task)
+    {
+        taskToDelete = task;
+        await JS.InvokeVoidAsync("modalHelper.showModal", "deleteTaskModal");
+    }
+
+    private async Task CreateTask()
+    {
+        await JS.InvokeVoidAsync("modalHelper.showModal", "createTaskModal");
+    }
+}

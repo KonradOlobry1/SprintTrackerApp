@@ -1,0 +1,70 @@
+﻿@page "/create-task"
+@using DummyProject.Models
+@using SprintTrackerApp.Data
+@inject NavigationManager Navigation
+@inject TaskService TaskService
+
+<h3>Create New Task</h3>
+
+<EditForm Model="@newTask" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label for="title">Task Title</label>
+        <InputText id="Title" class="form-control" @bind-Value="newTask.Title" />
+        <ValidationMessage For="@(() => newTask.Title)" />
+    </div>
+
+    <div class="form-group">
+        <label for="storyPoints">Story Points</label>
+        <InputNumber id="storyPoints" class="form-control" @bind-Value="newTask.StoryPoints" />
+        <ValidationMessage For="@(() => newTask.StoryPoints)" />
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description</label>
+        <InputText id="description" class="form-control" @bind-Value="newTask.Description" />
+        <ValidationMessage For="@(() => newTask.Description)" />
+    </div>
+
+    <div class="form-group">
+        <label for="status">Status</label>
+        <InputSelect id="status" class="form-control" @bind-Value="newTask.Status">
+            @foreach (var status in Enum.GetValues(typeof(DummyProject.Models.TaskStatus)))
+            {
+                    <option value="@status">@status</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => newTask.Status)" />
+    </div>
+
+    <div class="form-group">
+        <label for="priority">Priority</label>
+        <InputSelect id="priority" class="form-control" @bind-Value="newTask.Priority">
+            @foreach (var priority in Enum.GetValues(typeof(TaskPriority)))
+            {
+                    <option value="@priority">@priority</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => newTask.Priority)" />
+    </div>
+
+    <br>
+    <button type="submit" class="btn btn-primary">Create Task</button>
+</EditForm>
+
+@code {
+    private TaskItem newTask = new TaskItem();
+
+    protected override void OnInitialized()
+    {
+        newTask.StoryPoints = 0;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await TaskService.AddTaskAsync(newTask);
+        Navigation.NavigateTo("/");
+    }
+}
