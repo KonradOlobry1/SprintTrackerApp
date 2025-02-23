@@ -1,0 +1,39 @@
+﻿@inject IJSRuntime JS
+@inject TaskService TaskService
+@using DummyProject.Models
+@using SprintTrackerApp.Data
+
+<div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-labelledby="deleteTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete <span class="text-success">@TaskToDelete?.Title</span> task?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" @onclick="DeleteConfirmed" data-bs-dismiss="modal">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public TaskItem TaskToDelete { get; set; } = new();
+    [Parameter] public EventCallback OnTaskDeleted { get; set; }
+
+    private async Task DeleteConfirmed()
+    {
+        await TaskService.DeleteTaskAsync(TaskToDelete);
+        await OnTaskDeleted.InvokeAsync();
+        await CloseModal();
+    }
+
+    private async Task CloseModal()
+    {
+        await JS.InvokeVoidAsync("modalHelper.hideModal", "deleteTaskModal");
+    }
+}

@@ -1,0 +1,81 @@
+﻿@inject IJSRuntime JS
+@inject TaskService TaskService
+@using DummyProject.Models
+@using SprintTrackerApp.Data
+
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTaskModalLabel">Create a new task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="TaskToCreate" OnValidSubmit="SaveChanges">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <InputText class="form-control" @bind-Value="TaskToCreate.Title" />
+                        <ValidationMessage For="@(() => TaskToCreate.Title)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <InputTextArea class="form-control" @bind-Value="TaskToCreate.Description" />
+                        <ValidationMessage For="@(() => TaskToCreate.Description)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Story Points</label>
+                        <InputNumber class="form-control" @bind-Value="TaskToCreate.StoryPoints" />
+                        <ValidationMessage For="@(() => TaskToCreate.StoryPoints)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <InputSelect class="form-select" @bind-Value="TaskToCreate.Priority">
+                            @foreach (var priority in Enum.GetValues<TaskPriority>())
+                            {
+                                    <option value="@priority">@priority</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editStatus" class="form-label">Status</label>
+                        <InputSelect id="editStatus" class="form-select" @bind-Value="TaskToCreate.Status">
+                            @foreach (var status in Enum.GetValues<DummyProject.Models.TaskStatus>())
+                            {
+                                    <option value="@status">@status</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Create task</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private TaskItem TaskToCreate { get; set; } = new();
+    [Parameter] public EventCallback OnTaskCreated { get; set; }
+
+    private async Task SaveChanges()
+    {
+		await TaskService.AddTaskAsync(TaskToCreate);
+        await OnTaskCreated.InvokeAsync();
+        await CloseModal();
+    }
+
+    private async Task CloseModal()
+    {
+        await JS.InvokeVoidAsync("modalHelper.hideModal", "createTaskModal");
+    }
+}

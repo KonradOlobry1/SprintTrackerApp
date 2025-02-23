@@ -1,9 +1,12 @@
 @page "/"
 @using DummyProject.Models
+@using SprintTrackerApp.Components.Modals
+@using TaskStatus = DummyProject.Models.TaskStatus
 @using SprintTrackerApp.Data
 @inject TaskService TaskService
 @inject SprintService SprintService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 @if (showPopup)
 {
@@ -26,15 +29,16 @@ else
             @foreach (var task in tasks)
             {
                 <tr>
-                    <td class="task-column position-relative">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="task-title">@task.Title</div>
-                            <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" @onclick="() => SetTaskToDelete(task)">
-                                <i class="bi bi-x"></i>
-                            </button>
+                    <td class="task-column">
+                        <div class="card @GetCardBackgroundClass(task.Status)" style="width: 18rem;">
+                            <div class="card-body">
+                                <h5 class="card-title">@task.Title</h5>
+                                <h6 class="card-subtitle mb-2 text-body-secondary">@task.Status</h6>
+                                <p class="card-text">@task.Description</p>
+                                <button type="button" class="btn btn-primary btn-sm" @onclick="() => EditTask(task)">Edit</button>
+                                <button type="button" class="btn btn-danger btn-sm" @onclick="() => DeleteTask(task)">Delete</button>
+                            </div>
                         </div>
-                        <div class="task-description">@task.Description</div>
-                        <div class="task-status">@task.Status</div>
                     </td>
                     @for (var i = 0; i < days?.Length; i++)
                     {
@@ -50,8 +54,8 @@ else
                     <div class="dropdown">
                         <button class="w-100 btn btn-success btn-sm bi bi-plus-square dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> Add</button>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#taskItemModal">Add new task</a></li>
-                            <li><a class="dropdown-item" href="#">Add existing task</a></li>
+                            <li><button type="button" class="dropdown-item" @onclick="() => CreateTask()">Add new task</button></li>
+                            <li><button type="button" class="dropdown-item" >Add existing task</button></li>
                         </ul>
                     </div>
                 </td>
@@ -59,94 +63,9 @@ else
         </tbody>
     </table>
 
-	<!-- Modal for ConfirmDelete -->
-    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirm Deletion</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    Are you sure you want to delete <span class="text-success">@taskToDelete?.Title</span> task?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" @onclick="DeleteConfirmed" data-bs-dismiss="modal">Delete</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal for NewTaskItem -->
-    <div class="modal fade" id="taskItemModal" tabindex="-1" aria-labelledby="taskItemModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="taskItemModalLabel">Add Task</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <EditForm Model="@newTaskItem" OnValidSubmit="@HandleSaveTask">
-                        <DataAnnotationsValidator />
-
-                        <div class="mb-3">
-                            <label for="taskTitle" class="form-label">Title</label>
-                            <InputText id="taskTitle" class="form-control" @bind-Value="newTaskItem.Title" />
-                            <ValidationMessage For="@(() => newTaskItem.Title)" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="taskDescription" class="form-label">Description</label>
-                            <InputTextArea id="taskDescription" class="form-control" @bind-Value="newTaskItem.Description" />
-                            <ValidationMessage For="@(() => newTaskItem.Description)" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="storyPoints" class="form-label">Story Points</label>
-                            <InputNumber id="storyPoints" class="form-control" @bind-Value="newTaskItem.StoryPoints" />
-                            <ValidationMessage For="@(() => newTaskItem.StoryPoints)" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="priority" class="form-label">Priority</label>
-                            <InputSelect id="priority" class="form-select" @bind-Value="newTaskItem.Priority">
-                                @foreach (var priority in Enum.GetValues<TaskPriority>())
-                                {
-                                    <option value="@priority">@priority</option>
-                                }
-                            </InputSelect>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <InputSelect id="status" class="form-select" @bind-Value="newTaskItem.Status">
-                                @foreach (var status in Enum.GetValues<DummyProject.Models.TaskStatus>())
-                                {
-                                    <option value="@status">@status</option>
-                                }
-                            </InputSelect>
-                        </div>
-
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Save Task</button>
-                        </div>
-                    </EditForm>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        var confirmDeleteModal = document.getElementById('confirmDeleteModal');
-        confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
-          var button = event.relatedTarget; // Button that triggered the modal
-          var itemId = button.getAttribute('data-id');
-          var modalBody = confirmDeleteModal.querySelector('#modalItemId');
-          modalBody.textContent = itemId;
-        });
-    </script>
+    <CreateTaskModal @ref="createTaskModal" OnTaskCreated="ReloadTasks" />
+    <EditTaskModal @ref="editTaskModal" TaskToEdit="@taskToEdit" OnTaskEdited="ReloadTasks" />   
+    <DeleteTaskModal @ref="deleteTaskModal" TaskToDelete="@taskToDelete" OnTaskDeleted="ReloadTasks" />
 }
 
 @code {
@@ -154,26 +73,41 @@ else
     private SprintItem? currentSprint = new();
     private string[]? days;
     private bool showPopup = false;
-    private TaskItem newTaskItem = new();
     private TaskItem? taskToDelete;
+    private TaskItem taskToEdit = new();
+    private EditTaskModal editTaskModal = new();
+    private CreateTaskModal createTaskModal = new();
+	private DeleteTaskModal deleteTaskModal = new();
 
     protected override async Task OnInitializedAsync()
     {
-        tasks = await TaskService.GetTasksAsync();
-        currentSprint = await SprintService.GetCurrentSprintsAsync();
+        await LoadDataAsync();
+    }
 
-        if (currentSprint == null)
+    private async Task LoadDataAsync()
+    {
+        try
         {
-            showPopup = true;
-        }
-        else
-        {
-            days = new string[SprintService.GetSprintDuration(currentSprint)];
-            var startDate = currentSprint.StartDate;
-            for (int i = 0; i < days.Length; i++)
+            tasks = await TaskService.GetTasksAsync();
+            currentSprint = await SprintService.GetCurrentSprintsAsync();
+
+            if (currentSprint == null)
             {
-                days[i] = startDate.AddDays(i).ToString("MM/dd");
+                showPopup = true;
             }
+            else
+            {
+                days = new string[SprintService.GetSprintDuration(currentSprint)];
+                var startDate = currentSprint.StartDate;
+                for (int i = 0; i < days.Length; i++)
+                {
+                    days[i] = startDate.AddDays(i).ToString("MM/dd");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
         }
     }
 
@@ -204,45 +138,19 @@ else
         return "NotStarted";
     }
 
-    private async Task CreateNewSprint()
+    private void CreateNewSprint()
     {
         Navigation.NavigateTo("/create-sprint");
     }
 
-    private async Task CreateNewTask()
+    private void CreateNewTask()
     {
         Navigation.NavigateTo("/create-task");
     }
 
-    private async Task LoadPreviousSprint()
+    private void LoadPreviousSprint()
     {
         showPopup = false;
-    }
-
-    private async void HandleSaveTask()
-    {
-        try
-        {
-            await TaskService.AddTaskAsync(new TaskItem
-                {
-                    Title = newTaskItem.Title,
-                    Description = newTaskItem.Description,
-                    StoryPoints = newTaskItem.StoryPoints,
-                    Priority = newTaskItem.Priority,
-                    Status = newTaskItem.Status,
-                    DateAdded = DateTime.Now
-                });
-
-            tasks = await TaskService.GetTasksAsync();
-        }
-        catch (Exception ex)
-        {
-            // Handle error (e.g., log it, show a message to the user)
-        }
-        finally
-        {
-            StateHasChanged();
-        }
     }
 
     private void SetTaskToDelete(TaskItem task)
@@ -250,23 +158,51 @@ else
         taskToDelete = task;
     }
 
-    private async void DeleteConfirmed()
+    private async Task DeleteConfirmed()
     {
         if (taskToDelete == null) return;
 
-        try
+        await TaskService.DeleteTaskByIdAsync(taskToDelete.Id);
+        tasks.Remove(taskToDelete);
+
+        StateHasChanged();
+    }
+
+    private string GetCardBackgroundClass(TaskStatus status)
+    {
+        return status switch
         {
-            await TaskService.DeleteTaskByIdAsync(taskToDelete.Id);
-            tasks.Remove(taskToDelete);
-        }
-        catch (Exception ex)
-        {
-            // Handle error (e.g., log it, show a message to the user)
-        }
-        finally
-        {
-            StateHasChanged();
-        }
+            TaskStatus.Created => "text-bg-secondary",
+            TaskStatus.Open => "text-bg-primary",
+            TaskStatus.InProgress => "text-bg-warning",
+            TaskStatus.InReview => "text-bg-info",
+            TaskStatus.Completed => "text-bg-success",
+            TaskStatus.Deffered => "text-bg-dark",
+            TaskStatus.Blocked => "text-bg-danger",
+            _ => "text-bg-light"
+        };
+    }
+
+    private async Task ReloadTasks()
+    {
+        tasks = await TaskService.GetTasksAsync();
+        StateHasChanged();
+    }
+
+    private async Task EditTask(TaskItem task)
+    {
+        taskToEdit = task;
+        await JS.InvokeVoidAsync("modalHelper.showModal", "editTaskModal");
+    }
+
+    private async Task DeleteTask(TaskItem task)
+    {
+        taskToDelete = task;
+        await JS.InvokeVoidAsync("modalHelper.showModal", "deleteTaskModal");
+    }
+
+    private async Task CreateTask()
+    {
+        await JS.InvokeVoidAsync("modalHelper.showModal", "createTaskModal");
     }
 }
-
