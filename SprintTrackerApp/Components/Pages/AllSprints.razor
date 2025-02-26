@@ -1,0 +1,164 @@
+﻿@page "/all-sprints"
+@using DummyProject.Models
+@using SprintTrackerApp.Data
+@inject SprintService SprintService
+
+<h3>All Sprints</h3>
+
+<table class="table table-striped table-primary">
+    <thead class="table-dark">
+        <tr>
+            <th @onclick="() => SortSprintsBy(SortField.Name)" style="cursor: pointer;">
+                Name @((MarkupString)GetSortIndicator(SortField.Name))
+            </th>
+            <th @onclick="() => SortSprintsBy(SortField.StartDate)" style="cursor: pointer;">
+                Start Date @((MarkupString)GetSortIndicator(SortField.StartDate))
+            </th>
+            <th @onclick="() => SortSprintsBy(SortField.EndDate)" style="cursor: pointer;">
+                End Date @((MarkupString)GetSortIndicator(SortField.EndDate))
+            </th>
+        </tr>
+        <tr>
+            <th>
+                <input type="text" class="form-control form-control-sm"
+                       placeholder="Filter by name"
+                       @bind="nameFilter"
+                       @bind:event="oninput"
+                       @bind:after="ApplyFilters" />
+            </th>
+            <th colspan="2">
+                <button class="btn btn-primary" @onclick="ToggleFilterModal"> 📅 Filter by Date</button>
+                <button type="button" class="btn btn-outline-danger" @onclick="ClearFilters">Clear Filters</button>
+            </th>
+        </tr>
+    </thead>
+    <tbody class="table-group-divider">
+        @foreach (var sprint in filteredSprints)
+        {
+            <tr>
+                <td>@sprint.Name</td>
+                <td>@sprint.StartDate.ToString("dd/MM/yyyy")</td>
+                <td>@sprint.EndDate.ToString("dd/MM/yyyy")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (showFilterModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Filter Sprints by Date</h5>
+                    <button type="button" class="btn-close" @onclick="ToggleFilterModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Newer Than:</label>
+                        <input type="date" class="form-control" @bind="newerThanDate" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Older Than:</label>
+                        <input type="date" class="form-control" @bind="olderThanDate" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="ToggleFilterModal">Close</button>
+                    <button type="button" class="btn btn-primary" @onclick="ApplyFilters">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<SprintItem> sprints = new();
+    private List<SprintItem> filteredSprints = new();
+    private string nameFilter = string.Empty;
+    private SortField currentSortField = SortField.StartDate;
+    private DateTime? newerThanDate = null;
+    private DateTime? olderThanDate = null;
+    private bool ascending = false;
+    private bool showFilterModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        sprints = await SprintService.GetSprintsAsync();
+        filteredSprints = sprints;
+        SortSprints();
+    }
+
+    private void SortSprintsBy(SortField sortField)
+    {
+        if (currentSortField == sortField)
+        {
+            ascending = !ascending;
+        }
+        else
+        {
+            currentSortField = sortField;
+            ascending = true;
+        }
+
+        SortSprints();
+    }
+
+    private void SortSprints()
+    {
+        var keySelector = currentSortField switch
+        {
+            SortField.Name => (Func<SprintItem, object>)(s => s.Name),
+            SortField.StartDate => s => s.StartDate,
+            SortField.EndDate => s => s.EndDate,
+            _ => s => s.Name
+        };
+
+        filteredSprints = ascending
+            ? filteredSprints.OrderBy(keySelector).ToList()
+            : filteredSprints.OrderByDescending(keySelector).ToList();
+    }
+
+    private void ToggleFilterModal()
+    {
+        showFilterModal = !showFilterModal;
+    }
+
+    private void ApplyFilters()
+    {
+        filteredSprints = sprints
+            .Where(s =>
+                (string.IsNullOrEmpty(nameFilter) || s.Name.Contains(nameFilter, StringComparison.OrdinalIgnoreCase)) &&
+                (!newerThanDate.HasValue || s.StartDate >= newerThanDate.Value) &&
+                (!olderThanDate.HasValue || s.EndDate <= olderThanDate.Value)
+            )
+            .ToList();
+
+        SortSprints();
+        showFilterModal = false;
+    }
+
+    private void ClearFilters()
+    {
+        nameFilter = string.Empty;
+        newerThanDate = null;
+        olderThanDate = null;
+        filteredSprints = sprints;
+        SortSprints();
+    }
+
+    private MarkupString GetSortIndicator(SortField field)
+    {
+        if (currentSortField != field)
+            return (MarkupString)string.Empty;
+
+        return new MarkupString($"<span class='ms-1'>{(ascending ? "▲" : "▼")}</span>");
+    }
+
+    private enum SortField
+    {
+        Name,
+        StartDate,
+        EndDate
+    }
+}
