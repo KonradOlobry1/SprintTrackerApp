@@ -30,6 +30,13 @@ namespace SprintTrackerApp.Data
             await _context.SaveChangesAsync();
         }
 
+        public async Task UpdateTaskProgressAsync(TaskItem task, TaskProgress progress)
+        {
+            task.Progress.Add(progress);
+            _context.Tasks.Update(task);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task DeleteTaskAsync(TaskItem task)
         {
             _context.Tasks.Remove(task);

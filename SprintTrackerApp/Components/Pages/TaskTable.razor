@@ -30,20 +30,20 @@ else
             {
                 <tr>
                     <td class="task-column">
-                        <div class="card @GetCardBackgroundClass(task.Status)" style="width: 18rem;">
+                        <div class="card @GetCardBackgroundClass(task.Task.Status)" style="width: 18rem;">
                             <div class="card-body">
-                                <h5 class="card-title">@task.Title</h5>
-                                <h6 class="card-subtitle mb-2 text-body-secondary">@task.Status</h6>
-                                <p class="card-text">@task.Description</p>
-                                <button type="button" class="btn btn-primary btn-sm" @onclick="() => EditTask(task)">Edit</button>
-                                <button type="button" class="btn btn-danger btn-sm" @onclick="() => DeleteTask(task)">Delete</button>
+                                <h5 class="card-title">@task.Task.Title</h5>
+                                <h6 class="card-subtitle mb-2 text-body-secondary">@task.Task.Status @task.Task.Progress.Sum(p => p.StoryPointsCompleted) / @task.Task.StoryPoints</h6>
+                                <p class="card-text">@task.Task.Description</p>
+                                <button type="button" class="btn btn-primary btn-sm" @onclick="() => EditTask(task.Task)">Edit</button>
+                                <button type="button" class="btn btn-danger btn-sm" @onclick="() => DeleteTask(task.Task)">Delete</button>
                             </div>
                         </div>
                     </td>
                     @for (var i = 0; i < days?.Length; i++)
                     {
                         <td>
-                            @RenderTaskStatus(task, i)
+                            <TaskProgressCard Task="task.Task" Day="i" OnProgressUpdated="HandleProgressUpdated" />
                         </td>
                     }
                 </tr>
@@ -54,8 +54,8 @@ else
                     <div class="dropdown">
                         <button class="w-100 btn btn-success btn-sm bi bi-plus-square dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> Add</button>
                         <ul class="dropdown-menu">
-                            <li><button type="button" class="dropdown-item" @onclick="() => CreateTask()">Add new task</button></li>
-                            <li><button type="button" class="dropdown-item" >Add existing task</button></li>
+                            <li><button type="button" class="dropdown-item" @onclick="() => CreateTask(currentSprint)">Add new task</button></li>
+                            <li><button type="button" class="dropdown-item">Add existing task</button></li>
                         </ul>
                     </div>
                 </td>
@@ -63,13 +63,13 @@ else
         </tbody>
     </table>
 
-    <CreateTaskModal @ref="createTaskModal" OnTaskCreated="ReloadTasks" />
-    <EditTaskModal @ref="editTaskModal" TaskToEdit="@taskToEdit" OnTaskEdited="ReloadTasks" />   
+    <CreateTaskModal @ref="createTaskModal" currentSprint="@currentSprint" OnTaskCreated="ReloadTasks" />
+    <EditTaskModal @ref="editTaskModal" TaskToEdit="@taskToEdit" OnTaskEdited="ReloadTasks" />
     <DeleteTaskModal @ref="deleteTaskModal" TaskToDelete="@taskToDelete" OnTaskDeleted="ReloadTasks" />
 }
 
 @code {
-    private List<TaskItem> tasks = new();
+    private List<SprintTask> tasks = new();
     private SprintItem? currentSprint = new();
     private string[]? days;
     private bool showPopup = false;
@@ -77,7 +77,7 @@ else
     private TaskItem taskToEdit = new();
     private EditTaskModal editTaskModal = new();
     private CreateTaskModal createTaskModal = new();
-	private DeleteTaskModal deleteTaskModal = new();
+    private DeleteTaskModal deleteTaskModal = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -88,7 +88,6 @@ else
     {
         try
         {
-            tasks = await TaskService.GetTasksAsync();
             currentSprint = await SprintService.GetCurrentSprintsAsync();
 
             if (currentSprint == null)
@@ -97,6 +96,7 @@ else
             }
             else
             {
+                tasks = await SprintService.GetTasksForSprintAsync(currentSprint.Id);
                 days = new string[SprintService.GetSprintDuration(currentSprint)];
                 var startDate = currentSprint.StartDate;
                 for (int i = 0; i < days.Length; i++)
@@ -111,22 +111,11 @@ else
         }
     }
 
-    private RenderFragment RenderTaskStatus(TaskItem task, int day) => builder =>
+    private async Task HandleProgressUpdated((TaskItem task, TaskProgress progress) update)
     {
-        var progress = task.Progress.FirstOrDefault(p => p.Day == day);
-        if (progress != null)
-        {
-            builder.OpenElement(0, "div");
-            builder.AddContent(1, $"{progress.StoryPointsCompleted} SP done by {progress.CompletedBy}");
-            builder.CloseElement();
-        }
-        else
-        {
-            builder.OpenElement(0, "div");
-            builder.AddContent(1, "No progress");
-            builder.CloseElement();
-        }
-    };
+        await TaskService.UpdateTaskProgressAsync(update.task, update.progress);
+        await LoadDataAsync();
+    }
 
     private string GetStatusForDay(TaskItem task, int day)
     {
@@ -163,7 +152,7 @@ else
         if (taskToDelete == null) return;
 
         await TaskService.DeleteTaskByIdAsync(taskToDelete.Id);
-        tasks.Remove(taskToDelete);
+        tasks.Remove(tasks.First(t => t.Task.Id == taskToDelete.Id));
 
         StateHasChanged();
     }
@@ -185,7 +174,7 @@ else
 
     private async Task ReloadTasks()
     {
-        tasks = await TaskService.GetTasksAsync();
+        tasks = await SprintService.GetTasksForSprintAsync(currentSprint.Id);
         StateHasChanged();
     }
 
@@ -201,7 +190,7 @@ else
         await JS.InvokeVoidAsync("modalHelper.showModal", "deleteTaskModal");
     }
 
-    private async Task CreateTask()
+    private async Task CreateTask(SprintItem sprint)
     {
         await JS.InvokeVoidAsync("modalHelper.showModal", "createTaskModal");
     }

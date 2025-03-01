@@ -1,4 +1,5 @@
 ﻿using DummyProject;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SprintTrackerApp.Data;
 
@@ -35,7 +36,7 @@ namespace SprintTrackerApp
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                dbContext.Database.EnsureCreated();
+                dbContext.Database.Migrate();
             }
 
             return app;
