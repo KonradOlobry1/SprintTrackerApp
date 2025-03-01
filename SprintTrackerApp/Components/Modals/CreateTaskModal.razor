@@ -1,5 +1,6 @@
 ﻿@inject IJSRuntime JS
 @inject TaskService TaskService
+@inject SprintService SprintService
 @using DummyProject.Models
 @using SprintTrackerApp.Data
 
@@ -66,10 +67,12 @@
 @code {
     private TaskItem TaskToCreate { get; set; } = new();
     [Parameter] public EventCallback OnTaskCreated { get; set; }
+	[Parameter] public SprintItem currentSprint { get; set; }
 
     private async Task SaveChanges()
     {
 		await TaskService.AddTaskAsync(TaskToCreate);
+        await SprintService.AddTaskToSprintAsync(currentSprint.Id, TaskToCreate.Id);
         await OnTaskCreated.InvokeAsync();
         await CloseModal();
     }

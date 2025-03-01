@@ -6,16 +6,16 @@ namespace DummyProject.Models
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Sprint name is required")]
-        [StringLength(100, ErrorMessage = "Sprint name cannot exceed 100 characters")]
+        [Required]
+        [StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Start date is required")]
+        [Required]
         public DateTime StartDate { get; set; }
 
-        [Required(ErrorMessage = "End date is required")]
-        [DateGreaterThan("StartDate", ErrorMessage = "End date must be after start date")]
+        [Required]
         public DateTime EndDate { get; set; }
-        public List<TaskItem> Tasks { get; set; } = [];
+
+        public List<SprintTask> SprintTasks { get; set; } = [];
     }
 }

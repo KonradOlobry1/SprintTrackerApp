@@ -1,0 +1,36 @@
+﻿@using DummyProject.Models
+@code {
+    [Parameter] public TaskItem Task { get; set; }
+    [Parameter] public int Day { get; set; }
+    [Parameter] public EventCallback<(TaskItem, TaskProgress)> OnProgressUpdated { get; set; }
+
+    private TaskProgress? progress;
+
+    protected override void OnParametersSet()
+    {
+        progress = Task.Progress.FirstOrDefault(p => p.Day == Day) ?? new TaskProgress { Day = Day, TaskItemId = Task.Id };
+    }
+
+    private async Task UpdateProgress()
+    {
+        if (progress != null)
+        {
+            await OnProgressUpdated.InvokeAsync((Task, progress));
+        }
+    }
+}
+
+<div class="card" style="width: 18rem;">
+    <div class="card-body">
+        <h5 class="card-title">Day @Day</h5>
+        <div class="mb-3">
+            <label for="storyPointsCompleted" class="form-label">Story Points Completed</label>
+            <input type="number" id="storyPointsCompleted" class="form-control" @bind="progress.StoryPointsCompleted" />
+        </div>
+        <div class="mb-3">
+            <label for="completedBy" class="form-label">Completed By</label>
+            <input type="text" id="completedBy" class="form-control" @bind="progress.CompletedBy" />
+        </div>
+        <button class="btn btn-primary" @onclick="UpdateProgress">Save</button>
+    </div>
+</div>
