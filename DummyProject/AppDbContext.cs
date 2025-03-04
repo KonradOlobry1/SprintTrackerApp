@@ -8,7 +8,7 @@ namespace DummyProject
         public DbSet<TaskItem> Tasks { get; set; }
         public DbSet<SprintItem> Sprints { get; set; }
         public DbSet<TaskProgress> TaskProgresses { get; set; }
-        public DbSet<SprintTask> SprintTasks { get; set; } // 🔹 Many-to-Many table
+        public DbSet<SprintTask> SprintTasks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

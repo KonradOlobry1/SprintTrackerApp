@@ -114,7 +114,7 @@ else
     private async Task HandleProgressUpdated((TaskItem task, TaskProgress progress) update)
     {
         await TaskService.UpdateTaskProgressAsync(update.task, update.progress);
-        await LoadDataAsync();
+        StateHasChanged();
     }
 
     private string GetStatusForDay(TaskItem task, int day)
@@ -139,6 +139,7 @@ else
 
     private void LoadPreviousSprint()
     {
+		//TODO: Implement loading previous sprint
         showPopup = false;
     }
 
