@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DummyProject.Models
 {
@@ -18,6 +19,7 @@ namespace DummyProject.Models
         public int StoryPoints { get; set; }
         public TaskPriority Priority { get; set; } = TaskPriority.P2; // Default priority.
         public DateTime DateAdded { get; set; } = DateTime.Now;
+        public List<SprintTask> SprintTasks { get; set; } = [];
         public List<TaskProgress> Progress { get; set; } = [];
     }
 }

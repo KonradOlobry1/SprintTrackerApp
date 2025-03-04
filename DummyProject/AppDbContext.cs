@@ -12,20 +12,32 @@ namespace DummyProject
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<SprintItem>()
-                .HasMany(s => s.Tasks)
-                .WithMany();
-
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<SprintTask>()
+                .HasKey(st => new { st.SprintId, st.TaskId });
+
+            modelBuilder.Entity<SprintTask>()
+                .HasOne(st => st.Sprint)
+                .WithMany(s => s.SprintTasks)
+                .HasForeignKey(st => st.SprintId);
+
+            modelBuilder.Entity<SprintTask>()
+                .HasOne(st => st.Task)
+                .WithMany(t => t.SprintTasks)
+                .HasForeignKey(st => st.TaskId);
+
+            modelBuilder.Entity<TaskProgress>()
+                .HasOne(tp => tp.TaskItem)
+                .WithMany(t => t.Progress)
+                .HasForeignKey(tp => tp.TaskItemId)
+                .OnDelete(DeleteBehavior.Cascade); 
         }
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "sprintTracker.db");
-            if (!File.Exists(dbPath))
-            {
-                File.Create(dbPath).Dispose();
-            }
             optionsBuilder.UseSqlite($"Data Source={dbPath}");
         }
     }

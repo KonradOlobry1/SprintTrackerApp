@@ -13,12 +13,12 @@ namespace SprintTrackerApp.Data
             _context = context;
         }
 
-        public async Task<List<SprintItem>> GetSprintsAsync() => await _context.Sprints.Include(static s => s.Tasks).ToListAsync();
+        public async Task<List<SprintItem>> GetSprintsAsync() => await _context.Sprints.Include(static s => s.SprintTasks).ToListAsync();
 
         public async Task<SprintItem?> GetCurrentSprintsAsync()
         {
             DateTime dateToCheck = DateTime.Now;
-            return await _context.Sprints.Include(static s => s.Tasks)
+            return await _context.Sprints.Include(static s => s.SprintTasks)
                                          .Where(dt => dateToCheck >= dt.StartDate && dateToCheck < dt.EndDate)
                                          .FirstOrDefaultAsync();
         }
@@ -31,12 +31,19 @@ namespace SprintTrackerApp.Data
 
         public async Task AddTaskToSprintAsync(int sprintId, int taskId)
         {
-            var sprint = await _context.Sprints.Include(s => s.Tasks).FirstOrDefaultAsync(s => s.Id == sprintId);
+            var sprint = await _context.Sprints.Include(s => s.SprintTasks).FirstOrDefaultAsync(s => s.Id == sprintId);
             var task = await _context.Tasks.FindAsync(taskId);
 
             if (sprint != null && task != null)
             {
-                sprint.Tasks.Add(task);
+                var sprintTask = new SprintTask
+                {
+                    SprintId = sprintId,
+                    TaskId = taskId,
+                    Sprint = sprint,
+                    Task = task
+                };
+                sprint.SprintTasks.Add(sprintTask);
                 await _context.SaveChangesAsync();
             }
         }
@@ -49,7 +56,7 @@ namespace SprintTrackerApp.Data
 
         public int GetSprintDuration(SprintItem sprint)
         {
-            return (sprint.EndDate - sprint.StartDate).Days + 1; // +1 to include both start and end dates
+            return (sprint.EndDate - sprint.StartDate).Days + 1;
         }
     }
 }

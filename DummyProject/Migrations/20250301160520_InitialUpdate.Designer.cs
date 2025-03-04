@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DummyProject.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250118183310_ModifyTaskItem")]
-    partial class ModifyTaskItem
+    [Migration("20250301160520_InitialUpdate")]
+    partial class InitialUpdate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -42,6 +42,21 @@ namespace DummyProject.Migrations
                     b.ToTable("Sprints");
                 });
 
+            modelBuilder.Entity("DummyProject.Models.SprintTask", b =>
+                {
+                    b.Property<int>("SprintId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("SprintId", "TaskId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("SprintTasks");
+                });
+
             modelBuilder.Entity("DummyProject.Models.TaskItem", b =>
                 {
                     b.Property<int>("Id")
@@ -53,6 +68,7 @@ namespace DummyProject.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Priority")
@@ -66,6 +82,7 @@ namespace DummyProject.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -89,56 +106,56 @@ namespace DummyProject.Migrations
                     b.Property<int>("StoryPointsCompleted")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("TaskItemId")
+                    b.Property<int>("TaskItemId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.HasIndex("TaskItemId");
 
-                    b.ToTable("TaskProgress");
+                    b.ToTable("TaskProgresses");
                 });
 
-            modelBuilder.Entity("SprintItemTaskItem", b =>
+            modelBuilder.Entity("DummyProject.Models.SprintTask", b =>
                 {
-                    b.Property<int>("SprintItemId")
-                        .HasColumnType("INTEGER");
+                    b.HasOne("DummyProject.Models.SprintItem", "Sprint")
+                        .WithMany("SprintTasks")
+                        .HasForeignKey("SprintId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Property<int>("TasksId")
-                        .HasColumnType("INTEGER");
+                    b.HasOne("DummyProject.Models.TaskItem", "Task")
+                        .WithMany("SprintTasks")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.HasKey("SprintItemId", "TasksId");
+                    b.Navigation("Sprint");
 
-                    b.HasIndex("TasksId");
-
-                    b.ToTable("SprintItemTaskItem");
+                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("DummyProject.Models.TaskProgress", b =>
                 {
-                    b.HasOne("DummyProject.Models.TaskItem", null)
+                    b.HasOne("DummyProject.Models.TaskItem", "TaskItem")
                         .WithMany("Progress")
-                        .HasForeignKey("TaskItemId");
+                        .HasForeignKey("TaskItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TaskItem");
                 });
 
-            modelBuilder.Entity("SprintItemTaskItem", b =>
+            modelBuilder.Entity("DummyProject.Models.SprintItem", b =>
                 {
-                    b.HasOne("DummyProject.Models.SprintItem", null)
-                        .WithMany()
-                        .HasForeignKey("SprintItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DummyProject.Models.TaskItem", null)
-                        .WithMany()
-                        .HasForeignKey("TasksId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("SprintTasks");
                 });
 
             modelBuilder.Entity("DummyProject.Models.TaskItem", b =>
                 {
                     b.Navigation("Progress");
+
+                    b.Navigation("SprintTasks");
                 });
 #pragma warning restore 612, 618
         }
