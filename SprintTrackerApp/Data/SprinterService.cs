@@ -41,11 +41,11 @@ namespace SprintTrackerApp.Data
             }
         }
 
-        public async Task<List<TaskItem>> GetTasksForSprintAsync(int sprintId)
-        {
-            var sprint = await _context.Sprints.Include(s => s.Tasks).FirstOrDefaultAsync(s => s.Id == sprintId);
-            return sprint?.Tasks.ToList() ?? new List<TaskItem>();
-        }
+        public async Task<List<SprintTask>> GetTasksForSprintAsync(int sprintId) => await _context.SprintTasks
+                .Include(st => st.Task)
+                .ThenInclude(t => t.Progress)
+                .Where(st => st.SprintId == sprintId)
+                .ToListAsync();
 
         public int GetSprintDuration(SprintItem sprint)
         {

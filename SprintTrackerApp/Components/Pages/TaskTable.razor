@@ -111,22 +111,11 @@ else
         }
     }
 
-    private RenderFragment RenderTaskStatus(TaskItem task, int day) => builder =>
+    private async Task HandleProgressUpdated((TaskItem task, TaskProgress progress) update)
     {
-        var progress = task.Progress.FirstOrDefault(p => p.Day == day);
-        if (progress != null)
-        {
-            builder.OpenElement(0, "div");
-            builder.AddContent(1, $"{progress.StoryPointsCompleted} SP done by {progress.CompletedBy}");
-            builder.CloseElement();
-        }
-        else
-        {
-            builder.OpenElement(0, "div");
-            builder.AddContent(1, "No progress");
-            builder.CloseElement();
-        }
-    };
+        await TaskService.UpdateTaskProgressAsync(update.task, update.progress);
+        StateHasChanged();
+    }
 
     private string GetStatusForDay(TaskItem task, int day)
     {
@@ -150,6 +139,7 @@ else
 
     private void LoadPreviousSprint()
     {
+		//TODO: Implement loading previous sprint
         showPopup = false;
     }
 

@@ -1,0 +1,34 @@
+﻿@using DummyProject.Models
+
+<div class="card w-100" style="width: 18rem;">
+    <div class="card-body">
+        <div class="mb-4">
+            <label for="storyPointsCompleted" class="form-label">SP</label>
+            <input type="number" id="storyPointsCompleted" class="form-control" @bind="progress.StoryPointsCompleted" @bind:event="oninput" @bind:after="UpdateProgress"/>
+        </div>
+        <div class="mb-3">
+            <input type="text" id="completedBy" class="form-control" @bind="progress.CompletedBy" @bind:event="oninput" @bind:after="UpdateProgress"/>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public TaskItem Task { get; set; }
+    [Parameter] public int Day { get; set; }
+    [Parameter] public EventCallback<(TaskItem, TaskProgress)> OnProgressUpdated { get; set; }
+
+    private TaskProgress progress = new();
+
+    protected override void OnParametersSet()
+    {
+        progress = Task.Progress.FirstOrDefault(p => p.Day == Day) ?? new TaskProgress { Day = Day, TaskItemId = Task.Id };
+    }
+
+    private async Task UpdateProgress()
+    {
+        if (progress != null)
+        {
+            await OnProgressUpdated.InvokeAsync((Task, progress));
+        }
+    }
+}
